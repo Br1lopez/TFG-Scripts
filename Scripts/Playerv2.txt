@@ -1,0 +1,192 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+
+
+
+    [SerializeField] float mov_escala = 0.15f;
+    [SerializeField] float grav_max = 15f;
+    [SerializeField] float grav_escala = 0.1f;
+    [SerializeField] float salto = 0.15f;
+    public Vector2 grav_dir = new Vector2(0, -1);
+    Vector2 grav_vector = new Vector2(0, 0);
+    float grav_fuerza = 0f;
+    int saltando;
+    float mov_direccion;
+
+    //Velocidad que lleva:
+    float hsp;
+    float vsp;
+
+    //Sitio donde se dibuja:
+
+
+    bool colision;
+    Vector2 vel;
+    Vector2 xy;
+
+    int colision_num_h;
+    int colision_num_v;
+    int colision_num_d;
+    RaycastHit2D[] colision_punto_h = new RaycastHit2D[1];
+    RaycastHit2D[] colision_punto_v = new RaycastHit2D[1];
+    RaycastHit2D[] colision_punto_d = new RaycastHit2D[1];
+
+    float dist_min = 0.01f;
+    Vector2 dist_min_vector = new Vector2(0.01f, 0.01f);
+
+
+
+
+
+    // Use this for initialization
+    void Start()
+    {
+        print("hey");
+        vsp = 0;
+        colision = false;
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        Vector2 xy = new Vector2(0, 0);
+
+        //Inputs
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            saltando = 1;
+        }
+
+        mov_direccion = Input.GetAxisRaw("Horizontal");
+
+        //Formula: velocidad horizontal
+        hsp = mov_escala * mov_direccion;
+
+       // print(grav_fuerza);
+
+        //Vectores
+        Vector2 vel = new Vector2(hsp + grav_vector.x, vsp + grav_vector.y);
+
+        //Formula: velocidad vertical
+
+        if (grav_fuerza < grav_max)
+            {
+                grav_fuerza += grav_escala;
+            }
+            else
+            {
+                grav_fuerza = grav_max;
+            }
+        
+
+        grav_vector = grav_dir * grav_fuerza;
+
+       
+
+
+        //Colision: velocidad vs dibujado
+       // print("h " + vel_h + " v " + vel_v);
+
+        colision_num_d = GetComponent<PolygonCollider2D>().Cast(vel, colision_punto_d, vel.magnitude, true);
+
+        if (colision_num_d > 0)
+        {
+
+            if (colision_punto_d[0].distance <= dist_min_vector.magnitude)
+            {
+               
+
+                colision_num_h = GetComponent<PolygonCollider2D>().Cast(new Vector2(vel.x, 0), colision_punto_h, vel.x, true);
+
+                if (colision_num_h > 0)
+                {
+                    xy.x = vel.x - (vel.x * (1 + - colision_punto_h[0].fraction)) - dist_min*Mathf.Sign(vel.x);
+                    colision = true;
+                    //print("choque h");
+                    grav_fuerza -= (grav_dir.x * grav_fuerza);
+
+                }
+                else
+                {
+                    xy.x = vel.x;
+                    colision = false;
+                   //print("no choque h");
+                }
+
+                colision_num_v = GetComponent<PolygonCollider2D>().Cast(new Vector2(0, vel.y), colision_punto_v, vel.y, true);
+                
+
+                if (colision_num_v > 0)
+                {
+                    xy.y = vel.y - (vel.y * (1 - colision_punto_v[0].fraction)) - dist_min*Mathf.Sign(vel.y);
+                    colision = true;
+                    //print("choque v");
+                    grav_fuerza -= (grav_dir.y * grav_fuerza);
+
+                }
+                else
+                {
+                    xy.y = vel.y;
+                    colision = false;
+                   // print("no choque v ");
+                    //print(colision_num_v);
+                }
+            }
+            else
+            {
+                xy = vel - (vel * (1 - colision_punto_d[0].fraction)) - (dist_min_vector* new Vector2 (Mathf.Sign(vel.x), Mathf.Sign(vel.y)));
+                colision = true;
+                //print("choque");
+            }
+        }
+        else
+        {
+            xy = vel;
+            colision = false;
+            //print("no choque");
+         
+        }
+        if (colision == true)
+        {
+            grav_fuerza = 0;
+        }
+
+        print(vel);
+        
+        //Dibujado final
+        GetComponent<Rigidbody2D>().MovePosition (GetComponent<Rigidbody2D>().position + xy);
+        
+       
+
+    }
+
+   /*private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.name == "Tilemap")
+        {
+
+           colision = true;
+           vsp = (-1) * saltando * salto;
+            
+
+        }
+      
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.name == "Tilemap")
+        {
+            colision = false;
+
+            saltando = 0;
+        }
+    }
+    */
+
+}
